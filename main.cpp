@@ -65,32 +65,38 @@ typedef struct
 // Initialize the haptic device
 void initHD();
 
+// Close the haptic device
+void endHD();
+
 // Update the force callback
 HDCallbackCode HDCALLBACK hapticsCallback(void *pUserData);
+
+// Update the graphics callback
+HDCallbackCode HDCALLBACK graphicsCallback(void *pUserData);
 
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
 
+// This function initializes the graphics
+void initGraphics();
+
 // This function updates the graphics
-void updateGraphics(void);
+void updateGraphics();
 
-// This function updates the haptics
-void updateHaptics(void);
+// This function closes all graphics
+void endGraphics();
 
-// This function updates the collisions
-void updateCollisions(void);
-
-// This function updates the dynamics
-void updateDynamics(void);
+// This is the main haptic and graphic rendering loop
+void mainLoop();
 
 int main(int argc, char* argv[])
 {
-    //! Create the volumetric mesh and load file
+    // Create the volumetric mesh and load file
     my_mesh = new TetMesh();
     my_mesh->loadFromFileVTU("/home/aldo/CLionProjects/Testing/assets/volumetric_mesh.vtu");
 
-    //! starts the graphic renderer
+    // starts the graphic renderer
     vtkNew<vtkRenderer> renderer;
     vtkNew<vtkRenderWindow> renderWindow;
     renderWindow->AddRenderer(renderer);
@@ -105,7 +111,21 @@ int main(int argc, char* argv[])
     renderWindow->Render();
     renderWindowInteractor->Start();
 
+    // Initialize the haptic device
+    initHD();
+
+    // start the main loop
+    mainLoop();
+
+    // Close haptic device
+    endHD();
+
     return EXIT_SUCCESS;
+}
+
+void mainLoop()
+{
+
 }
 
 void updateCollision(void)
@@ -118,12 +138,24 @@ void updateDynamics(void)
 
 }
 
-void updateGraphics(void)
+//------------------------------------------------------------------------------
+// GRAPHIC RENDERING
+//------------------------------------------------------------------------------
+
+//! Initializes the graphics
+void initGraphics()
 {
 
 }
 
-void updateHaptics(void)
+//! Updates the graphics
+void updateGraphics()
+{
+
+}
+
+//! Closes the graphics
+void endGraphics()
 {
 
 }
@@ -149,23 +181,79 @@ void initHD()
             hapticsCallback, 0, HD_MAX_SCHEDULER_PRIORITY
             );
 
+    hdEnable(HD_FORCE_OUTPUT);
     hdStartScheduler();
+
     if(HD_DEVICE_ERROR(error = hdGetError()))
     {
         hduPrintError(stderr, &error, "Failed to start the scheduler");
         exit(-1);
     }
+
 }
 
 //! Main haptics callback function
 HDCallbackCode HDCALLBACK hapticsCallback(void *pUserData)
 {
-    hduVector3Dd position;
-    hduVector3Dd velocity;
     HDErrorInfo error;
+    hduVector3Dd position;
+    hduVector3Dd force = { 0, 0, 0 };
 
     hdBeginFrame(ghHD);
 
-    hdGetDoublev(HD_CURRENT_POSITION, position);
-    hdGetDoublev(HD_CURRENT_VELOCITY, velocity);
+    hdSetDoublev(HD_CURRENT_FORCE, force);
+
+    hdEndFrame(ghHD);
+
+    if (HD_DEVICE_ERROR(error = hdGetError()))
+    {
+        /* This is likely a more serious error, so bail. */
+        hduPrintError(stderr, &error, "Error during haptic rendering");
+        exit(-1);
+    }
+
+    return HD_CALLBACK_CONTINUE;
+}
+
+//! Low priority graphics callback
+HDCallbackCode HDCALLBACK graphicsCallback(void *pUserData)
+{
+    HapticDisplayState *pState = (HapticDisplayState *) pUserData;
+    HDErrorInfo error;
+    int currentButtons;
+
+    hdGetDoublev(HD_CURRENT_POSITION, pState->position);
+    hdGetDoublev(HD_CURRENT_VELOCITY, pState->velocity);
+    hdGetDoublev(HD_CURRENT_TRANSFORM, pState->rotation);
+    hdGetDoublev(HD_CURRENT_ANGULAR_VELOCITY, pState->rotation_velocity);
+    hdGetIntegerv(HD_CURRENT_BUTTONS, &currentButtons);
+
+    if (currentButtons & HD_DEVICE_BUTTON_1 == 1){
+        pState->button1Pressed = HD_TRUE;
+    }
+    else {
+        pState->button1Pressed = HD_FALSE;
+    }
+
+    if (currentButtons & HD_DEVICE_BUTTON_2 == 1){
+        pState->button2Pressed = HD_TRUE;
+    }
+    else {
+        pState->button2Pressed = HD_FALSE;
+    }
+
+    if (HD_DEVICE_ERROR(error = hdGetError()))
+    {
+        /* This is likely a more serious error, so bail. */
+        hduPrintError(stderr, &error, "Error during haptic rendering");
+        exit(-1);
+    }
+
+    return HD_CALLBACK_DONE;
+}
+
+//! Ends communication with the haptic device
+void endHD()
+{
+
 }
