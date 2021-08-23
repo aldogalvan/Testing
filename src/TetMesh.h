@@ -31,10 +31,11 @@ public:
     //! Destructor of TetMesh
     ~TetMesh() {};
 
-public:
     //-----------------------------------------------------------------------
     // PUBLIC METHODS
     //-----------------------------------------------------------------------
+
+public:
 
     //! This method loads a file using VTK
     void loadFromFileVTU(const char * a_filename);

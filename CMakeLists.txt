@@ -20,20 +20,21 @@ include_directories (${VTK_INCLUDE_DIRS})
 link_directories (${VTK_LIBRARY_DIRS})
 add_definitions (${VTK_DEFINITIONS})
 
-#incude directories
-include_directories(${PROJECT_SOURCE_DIR}/src)
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+# Libigl
+option(LIBIGL_WITH_OPENGL            "Use OpenGL"         ON)
+option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"           ON)
+include(libigl)
+
+# header search path
+include_directories (${PROJECT_SOURCE_DIR}/src)
 
 #add executable
-add_executable(Testing main.cpp src/TetMesh.cpp src/GenericObject.cpp src/GenericObject.h)
+add_executable(Testing src/main.cpp src/TetMesh.cpp src/GenericObject.cpp src/ToolObject.cpp src/TriMesh.cpp)
 
 #link library
-target_link_libraries(Testing PRIVATE ${VTK_LIBRARIES} Eigen3::Eigen)
+target_link_libraries(Testing PRIVATE ${VTK_LIBRARIES} Eigen3::Eigen -lHDU -lHD)
+target_link_libraries(Testing PUBLIC igl::core igl::opengl_glfw)
 
-
-#automatically initiate the module
-vtk_module_autoinit(
-
-        TARGETS Testing
-        MODULES ${VTK_LIBRARIES}
-)
 

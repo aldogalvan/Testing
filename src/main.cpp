@@ -1,8 +1,8 @@
 #include <iostream>
 #include "TetMesh.h"
+#include "TriMesh.h"
 
 // INCLUDE VTK LIBRARIES
-#include <vtkNew.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
@@ -13,9 +13,22 @@
 #include <HDU/hduError.h>
 #include <HDU/hduVector.h>
 
+// INCLUDE IGL
+#include <igl/opengl/glfw/Viewer.h>
+#include <igl/readOBJ.h>
+
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
 //------------------------------------------------------------------------------
+
+// the visualizer
+igl::opengl::glfw::Viewer* viewer;
+
+// the triangle mesh object
+TriMesh* a_triMesh;
+
+// the tetrahedral mesh object
+TetMesh* a_tetMesh;
 
 // the volumetric mesh model
 TetMesh* my_mesh;
@@ -33,7 +46,7 @@ Eigen::Vector3d acc;
 Eigen::Matrix4d w;
 
 // tool rotational velocity
-Eigen::Matrix4d w_d;
+Eigen::Vector3d w_d;
 
 // tool angular acceleration
 Eigen::Matrix4d w_dd;
@@ -51,16 +64,6 @@ vtkRenderWindowInteractor* interactor;
 //! HD variables and functions
 static HHD ghHD = HD_INVALID_HANDLE;
 static HDSchedulerHandle hUpdateDeviceCallback = HD_INVALID_HANDLE;
-
-typedef struct
-{
-    hduVector3Dd position;
-    hduVector3Dd velocity;
-    HDdouble rotation[16];
-    HDdouble rotation_velocity[3];
-    HDboolean button1Pressed;
-    HDboolean button2Pressed;
-} HapticDisplayState;
 
 // Initialize the haptic device
 void initHD();
@@ -87,11 +90,20 @@ void updateGraphics();
 // This function closes all graphics
 void endGraphics();
 
-// This is the main haptic and graphic rendering loop
-void mainLoop();
+// This function updates the collision detection
+void updateCollision();
+
+// This function updates the dynamics
+void updateDynamics();
+
+// This function updates the graphics
+void updateGraphics();
+
 
 int main(int argc, char* argv[])
 {
+
+    /*
     // Create the volumetric mesh and load file
     my_mesh = new TetMesh();
     my_mesh->loadFromFileVTU("/home/aldo/CLionProjects/Testing/assets/volumetric_mesh.vtu");
@@ -110,22 +122,30 @@ int main(int argc, char* argv[])
     // render the window
     renderWindow->Render();
     renderWindowInteractor->Start();
+    */
 
     // Initialize the haptic device
     initHD();
 
-    // start the main loop
-    mainLoop();
+    // Initialize the graphics window
+    initGraphics();
+
+    while(HD_TRUE)
+    {
+        HDErrorInfo error;
+        hdScheduleSynchronous(graphicsCallback, 0 , HD_DEFAULT_SCHEDULER_PRIORITY);
+
+        if (HD_DEVICE_ERROR(error = hdGetError()))
+        {
+            hduPrintError(stderr, &error, "Failed to start the scheduler");
+            break;
+        }
+    }
 
     // Close haptic device
     endHD();
 
     return EXIT_SUCCESS;
-}
-
-void mainLoop()
-{
-
 }
 
 void updateCollision(void)
@@ -145,6 +165,11 @@ void updateDynamics(void)
 //! Initializes the graphics
 void initGraphics()
 {
+    // Imports the mesh
+    a_triMesh->loadFromFileIGL("", viewer);
+
+    // launch the viewer
+    viewer->launch();
 
 }
 
@@ -169,6 +194,7 @@ void initHD()
 {
     HDErrorInfo error;
     ghHD = hdInitDevice(HD_DEFAULT_DEVICE);
+
     if(HD_DEVICE_ERROR(error = hdGetError()))
     {
         hduPrintError(stderr, &error, "Failed to initialize haptic device");
@@ -195,12 +221,28 @@ void initHD()
 //! Main haptics callback function
 HDCallbackCode HDCALLBACK hapticsCallback(void *pUserData)
 {
+
     HDErrorInfo error;
     hduVector3Dd position;
+    hduVector3Dd velocity;
+    HDdouble rotation[16];
+    HDdouble rotation_velocity[3];
+
     hduVector3Dd force = { 0, 0, 0 };
 
     hdBeginFrame(ghHD);
 
+    hdGetDoublev(HD_CURRENT_POSITION, position);
+    pos.x() = position[0]; pos.y() = position[1]; pos.z() = position[2];
+    hdGetDoublev(HD_CURRENT_VELOCITY, velocity);
+    vel.x() = velocity[0]; vel.y() = velocity[1]; vel.z() = velocity[2];
+    hdGetDoublev(HD_CURRENT_TRANSFORM, rotation);
+    w(0,0) = rotation[0]; w(0 , 1) = rotation[1]; w (0, 2 ) = rotation[2]; w(0,3) = rotation[3];
+    w(1,0) = rotation[4]; w(1 , 1) = rotation[5]; w (1, 2 ) = rotation[6]; w(1,3) = rotation[7];
+    w(2,0) = rotation[8]; w(2 , 1) = rotation[9]; w (2, 2 ) = rotation[10]; w(2,3) = rotation[11];
+    w(3,0) = rotation[12]; w(3 , 1) = rotation[13]; w (3, 2 ) = rotation[14]; w(3,3) = rotation[15];
+    hdGetDoublev(HD_CURRENT_ANGULAR_VELOCITY, rotation_velocity);
+    w_d.x() = rotation_velocity[0]; w_d.y() = rotation_velocity[1]; w_d.z() = rotation_velocity[2];
     hdSetDoublev(HD_CURRENT_FORCE, force);
 
     hdEndFrame(ghHD);
@@ -215,39 +257,14 @@ HDCallbackCode HDCALLBACK hapticsCallback(void *pUserData)
     return HD_CALLBACK_CONTINUE;
 }
 
+
 //! Low priority graphics callback
 HDCallbackCode HDCALLBACK graphicsCallback(void *pUserData)
 {
-    HapticDisplayState *pState = (HapticDisplayState *) pUserData;
-    HDErrorInfo error;
-    int currentButtons;
-
-    hdGetDoublev(HD_CURRENT_POSITION, pState->position);
-    hdGetDoublev(HD_CURRENT_VELOCITY, pState->velocity);
-    hdGetDoublev(HD_CURRENT_TRANSFORM, pState->rotation);
-    hdGetDoublev(HD_CURRENT_ANGULAR_VELOCITY, pState->rotation_velocity);
-    hdGetIntegerv(HD_CURRENT_BUTTONS, &currentButtons);
-
-    if (currentButtons & HD_DEVICE_BUTTON_1 == 1){
-        pState->button1Pressed = HD_TRUE;
-    }
-    else {
-        pState->button1Pressed = HD_FALSE;
-    }
-
-    if (currentButtons & HD_DEVICE_BUTTON_2 == 1){
-        pState->button2Pressed = HD_TRUE;
-    }
-    else {
-        pState->button2Pressed = HD_FALSE;
-    }
-
-    if (HD_DEVICE_ERROR(error = hdGetError()))
-    {
-        /* This is likely a more serious error, so bail. */
-        hduPrintError(stderr, &error, "Error during haptic rendering");
-        exit(-1);
-    }
+    // Functions for simulation
+    updateCollision();
+    updateDynamics();
+    updateGraphics();
 
     return HD_CALLBACK_DONE;
 }
@@ -255,5 +272,7 @@ HDCallbackCode HDCALLBACK graphicsCallback(void *pUserData)
 //! Ends communication with the haptic device
 void endHD()
 {
-
+    hdStopScheduler();
+    hdUnschedule(hUpdateDeviceCallback);
+    hdDisableDevice(ghHD);
 }
