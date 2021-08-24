@@ -35,7 +35,7 @@ public:
 public:
 
     //! This method loads the mesh from a file
-    void loadFromFileIGL(const char *a_filename , igl::opengl::glfw::Viewer* viewer);
+    void loadFromFileIGL(std::string a_filename , igl::opengl::glfw::Viewer* viewer);
 
     //! This method renders the mesh
     void render(igl::opengl::glfw::Viewer* viewer);

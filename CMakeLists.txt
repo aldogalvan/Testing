@@ -34,7 +34,7 @@ include_directories (${PROJECT_SOURCE_DIR}/src)
 add_executable(Testing src/main.cpp src/TetMesh.cpp src/GenericObject.cpp src/ToolObject.cpp src/TriMesh.cpp)
 
 #link library
-target_link_libraries(Testing PRIVATE ${VTK_LIBRARIES} Eigen3::Eigen -lHDU -lHD)
+target_link_libraries(Testing PRIVATE ${VTK_LIBRARIES} Eigen3::Eigen -lHDU -lHD -lrt -lstdc++ -lm)
 target_link_libraries(Testing PUBLIC igl::core igl::opengl_glfw)
 
 

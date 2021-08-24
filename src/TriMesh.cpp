@@ -8,10 +8,10 @@
  * This method loads a file
  */
 
-void TriMesh::loadFromFileIGL(const char *a_filename, igl::opengl::glfw::Viewer* viewer)
+void TriMesh::loadFromFileIGL(std::string a_filename, igl::opengl::glfw::Viewer* viewer)
 {
     // Load a mesh in OBJ format
-    igl::readOBJ("assets/", V, F);
+    igl::readOBJ(a_filename, V, F);
 
    // Sets the mesh in the visualizer
    viewer->data().set_mesh(V, F);

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <iostream>
 #include "TetMesh.h"
 #include "TriMesh.h"
@@ -166,7 +167,7 @@ void updateDynamics(void)
 void initGraphics()
 {
     // Imports the mesh
-    a_triMesh->loadFromFileIGL("", viewer);
+    a_triMesh->loadFromFileIGL("../assets/spot_triangulated.obj", viewer);
 
     // launch the viewer
     viewer->launch();
