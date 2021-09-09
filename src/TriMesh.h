@@ -8,13 +8,12 @@
 #include <Eigen/Dense>
 #include <vector>
 
-// INCLUDE IGL
-#include <igl/opengl/glfw/Viewer.h>
-#include <igl/readOBJ.h>
+#include "GenericMesh.h"
 
 using namespace std;
 
-class TriMesh {
+class TriMesh: public GenericMesh
+{
 
     //-----------------------------------------------------------------------
     // CONSTRUCTOR & DESTRUCTOR:
@@ -34,12 +33,6 @@ public:
 
 public:
 
-    //! This method loads the mesh from a file
-    void loadFromFileIGL(std::string a_filename , igl::opengl::glfw::Viewer* viewer);
-
-    //! This method renders the mesh
-    void render(igl::opengl::glfw::Viewer* viewer);
-
     //! This method updates the mesh
     void updateMesh();
 
@@ -49,11 +42,11 @@ public:
 
 public:
 
-    //! Array of vertices
-    Eigen::MatrixX3d V;
+    //! Array of links
+    Eigen::MatrixX2i L_;
 
     //! Array of faces
-    Eigen::MatrixX3i F;
+    Eigen::MatrixX3i F_;
 
 };
 

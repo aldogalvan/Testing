@@ -31,7 +31,7 @@ include(libigl)
 include_directories (${PROJECT_SOURCE_DIR}/src)
 
 #add executable
-add_executable(Testing src/main.cpp src/TetMesh.cpp src/GenericObject.cpp src/ToolObject.cpp src/TriMesh.cpp)
+add_executable(Testing src/main.cpp src/TetMesh.cpp src/GenericObject.cpp src/ToolObject.cpp src/TriMesh.cpp src/World.cpp src/World.h src/GenericMesh.cpp src/GenericMesh.h src/GenericConstrants.h src/ExtendedConstraints.h src/CollisionDetector.cpp src/CollisionDetector.h src/HDCallbacks.cpp src/HDCallbacks.h)
 
 #link library
 target_link_libraries(Testing PRIVATE ${VTK_LIBRARIES} Eigen3::Eigen -lHDU -lHD -lrt -lstdc++ -lm)

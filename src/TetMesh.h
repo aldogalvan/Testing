@@ -4,20 +4,16 @@
 #ifndef TESTING_TETMESH_H
 #define TESTING_TETMESH_H
 
+// INCLUDE EIGEN LIBRARY
 #include <Eigen/Dense>
+
 #include <vector>
 #include "MeshObjects.h"
-#include <vtkUnstructuredGrid.h>
-#include <vtkXMLUnstructuredGridReader.h>
-#include <vtkStructuredGrid.h>
-#include <vtkUnstructuredGridCellIterator.h>
-#include <vtkActor.h>
-#include <vtkDataSetMapper.h>
-#include <vtkCellTypes.h>
+#include "GenericMesh.h"
 
-using namespace std;
 
-class TetMesh {
+class TetMesh : public GenericMesh
+{
 
     //-----------------------------------------------------------------------
     // CONSTRUCTOR & DESTRUCTOR:
@@ -26,7 +22,16 @@ class TetMesh {
 public:
 
     //! Constructor of TetMesh
-    TetMesh() {};
+    TetMesh(Eigen::MatrixX3d vertices, Eigen::MatrixX2i links,
+            Eigen::MatrixX3i faces, Eigen::MatrixX4i tetrahedra)
+            {
+
+        V_ = vertices;
+        L_ = links;
+        F_ = faces;
+        T_ = tetrahedra;
+
+            };
 
     //! Destructor of TetMesh
     ~TetMesh() {};
@@ -37,38 +42,21 @@ public:
 
 public:
 
-    //! This method loads a file using VTK
-    void loadFromFileVTU(const char * a_filename);
-
-    //! This method builds the volumetric mesh from an unstructured mesh
-    void buildTetMeshVTU();
-
-    //! This method builds the vertex objects
-    void createNewVertex(Eigen::Vector3d a_pos, int a_idx);
-
     //! This method builds the link objects
     void createNewLink(MeshVertex *a_v1, MeshVertex *a_v2, int a_idx);
 
-    //! THis method builds the triangle objects
+    //! This method builds the triangle objects
     void createNewTriangle(MeshVertex *a_v1, MeshVertex *a_v2, MeshVertex *a_v3, int a_idx, bool isOutside);
 
     //! This method builds the tetrahedra objects
     void createNewTetrahedron(MeshVertex *a_v1, MeshVertex *a_v2, MeshVertex *a_v3, MeshVertex *a_v4, int a_idx);
 
-    //! This method returns the actor for visual rendering
-    vtkSmartPointer<vtkActor> getActor();
 
     //-----------------------------------------------------------------------
     // PUBLIC MEMBERS:
     //-----------------------------------------------------------------------
 
 public:
-
-    //! Pointer to the vtk object
-    vtkSmartPointer<vtkUnstructuredGrid> h_grid;
-
-    //!Number of vertices
-    int h_numberVertices;
 
     //!Number of links
     int h_numberEdges;
@@ -79,17 +67,23 @@ public:
     //!Number of tetrahedrons
     int h_numberTetrahedrons;
 
-    //! List of nodes composing the skeleton.
-    vector<MeshVertex*> h_vertexList;
-
     //! List of links connecting the different nodes.
-    vector<MeshEdge*> h_edgeList;
+    std::vector<MeshEdge*> h_edgeList;
 
     //! List of tetrahedrons composing the mesh
-    vector<MeshTetrahedron *> h_tetrahedraList;
+    std::vector<MeshTetrahedron *> h_tetrahedraList;
 
     //! List of faces composing the mesh
-    vector<MeshTriangle*> h_triangleList;
+    std::vector<MeshTriangle*> h_triangleList;
+
+    //! Matrix representing indices of links
+    Eigen::MatrixX2i L_;
+
+    //! Matrix representing indices of faces
+    Eigen::MatrixX3i F_;
+
+    //! Matrix representing indices of tetrahedra
+    Eigen::MatrixX4i T_;
 
 };
 
